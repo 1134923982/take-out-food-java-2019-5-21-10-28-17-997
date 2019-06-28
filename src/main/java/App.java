@@ -12,9 +12,71 @@ public class App {
         this.salesPromotionRepository = salesPromotionRepository;
     }
 
-    public String bestCharge(List<String> inputs) {
-        //TODO: write code here
+	public String bestCharge(List<String> inputs) {
+		// TODO: write code here
+		int sum1 = 0;
+		int sum2 = 0;
+		StringBuffer str1 = new StringBuffer("============= 订餐明细 =============\n");
+		StringBuffer str2 = new StringBuffer("============= 订餐明细 =============\n");
 
-        return null;
-    }
+		for (SalesPromotion s : salesPromotionRepository.findAll()) {
+			if (s.getType().equals("BUY_30_SAVE_6_YUAN")) {
+				for (String i : inputs) {
+					String id = i.split(" x ")[0];
+					int num = Integer.parseInt(i.split(" x ")[1]);
+					for (Item item : itemRepository.findAll()) {
+						if (item.getId().equals(id)) {
+							str1 = str1.append(item.getName() + " x " + num + " = " + (int)item.getPrice() * num + "元\n");
+
+							sum1 = (int) (sum1 + item.getPrice() * num);
+						}
+					}
+
+				}
+				if (sum1 >= 30) {
+					int discount = (int) (sum1 / 30) * 6;
+					sum1 = (int) (sum1 - discount);
+					str1 = str1.append("-----------------------------------\n" + "使用优惠:\n" + s.getDisplayName() + "，省"
+							+ discount + "元\n" + "-----------------------------------\n" + "总计：" + sum1 + "元\n"+"===================================");
+				} else {
+					str1 = str1.append("-----------------------------------\n" 
+							+ "总计：" + sum1 + "元\n"+"===================================");
+				}
+
+			} else {
+				int discount = 0;
+				String discountItems = "";
+				for (String i : inputs) {
+					String id = i.split(" x ")[0];
+					int num = Integer.parseInt(i.split(" x ")[1]);
+					if (s.getRelatedItems().contains(id)) {
+						for (Item item : itemRepository.findAll()) {
+							if (item.getId().equals(id)) {
+								str2 = str2.append(item.getName() + " x " + num + " = " + (int)item.getPrice() * num + "元\n");
+								if (discountItems.length() != 0) {
+									discountItems += "，";
+								}
+								discountItems += item.getName();
+								discount += item.getPrice() * num * 0.5;
+								sum2 = (int) (sum2 + item.getPrice() * num * 0.5);
+							}
+						}
+					} else {
+						for (Item item : itemRepository.findAll()) {
+							if (item.getId().equals(id)) {
+								str2 = str2.append(item.getName() + " x " + num + " = " + (int)item.getPrice() * num + "元\n");
+								sum2 = (int) (sum2 + item.getPrice() * num);
+							}
+						}
+					}
+				}
+				str2 = str2.append("-----------------------------------\n" + "使用优惠:\n" + s.getDisplayName() + "("
+						+ discountItems + ")，省" + discount + "元\n" + "-----------------------------------\n" + "总计："
+						+ sum2 + "元\n"+"===================================");
+			}
+
+		}
+
+		return sum1>sum2?str2.toString():str1.toString();
+	}
 }
